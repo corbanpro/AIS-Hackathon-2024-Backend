@@ -21,15 +21,15 @@ async function InitializeDatabase() {
         table.string("netId").primary();
         table.string("firstName").notNullable();
         table.string("lastName").notNullable();
-        table.dateTime("dateCreated").defaultTo(db.fn.now());
         table.boolean("isAdmin").defaultTo(false);
+        table.dateTime("dateCreated").defaultTo(db.fn.now());
     });
     // Create Event table
     await db.schema.createTable("Event", (table) => {
         table.increments("eventId").primary();
         table.string("title").notNullable();
         table.dateTime("startTime").notNullable();
-        table.dateTime("endTime").nullable();
+        table.dateTime("endTime").notNullable();
         table.string("type").notNullable();
         table.string("notes").nullable();
         table.string("waiverUrl").nullable();
@@ -41,9 +41,9 @@ async function InitializeDatabase() {
     });
     // Create Scan table
     await db.schema.createTable("Scan", (table) => {
-        table.string("netId").references("netId").inTable("User");
-        table.integer("eventId").references("eventId").inTable("Event");
-        table.string("scannerId").references("netId").inTable("User");
+        table.string("netId").references("netId").inTable("User").notNullable();
+        table.integer("eventId").references("eventId").inTable("Event").notNullable();
+        table.string("scannerId").references("netId").inTable("User").notNullable();
         table.dateTime("timestamp").defaultTo(db.fn.now());
         table.boolean("plusOne").notNullable();
         table.primary(["netId", "eventId", "scannerId"]);
@@ -72,7 +72,7 @@ async function InitializeDatabase() {
             title: "Event 1",
             startTime: tomorrow,
             endTime: tomorrow,
-            type: "type 1",
+            type: "discover",
             notes: "notes 1",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -85,7 +85,7 @@ async function InitializeDatabase() {
             title: "Event 2",
             startTime: tomorrow,
             endTime: tomorrow,
-            type: "type 2",
+            type: "connect",
             notes: "notes 2",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -97,7 +97,7 @@ async function InitializeDatabase() {
             title: "Event 3",
             startTime: new Date(),
             endTime: new Date(),
-            type: "type 3",
+            type: "socialize",
             notes: "notes 3",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -109,7 +109,7 @@ async function InitializeDatabase() {
             title: "Event 4",
             startTime: new Date(),
             endTime: new Date(),
-            type: "type 4",
+            type: "learn",
             notes: "notes 4",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -121,7 +121,7 @@ async function InitializeDatabase() {
             title: "Event 5",
             startTime: new Date(),
             endTime: new Date(),
-            type: "type 5",
+            type: "serve",
             notes: "notes 5",
             createdBy: "janesmith101",
             createdDate: new Date(),
@@ -133,7 +133,7 @@ async function InitializeDatabase() {
             title: "Event 6",
             startTime: new Date(),
             endTime: new Date(),
-            type: "type 6",
+            type: "discover",
             notes: "notes 6",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -145,7 +145,7 @@ async function InitializeDatabase() {
             title: "Event 7",
             startTime: new Date(),
             endTime: new Date(),
-            type: "type 2",
+            type: "connect",
             notes: "notes 2",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -157,7 +157,7 @@ async function InitializeDatabase() {
             title: "Event 8",
             startTime: new Date(),
             endTime: new Date(),
-            type: "type 2",
+            type: "socialize",
             notes: "notes 2",
             createdBy: "johndoe24",
             createdDate: new Date(),
@@ -177,7 +177,7 @@ async function InitializeDatabase() {
         {
             netId: "johndoe24",
             eventId: 2,
-            scannerId: "johndoe24",
+            scannerId: "janesmith101",
             timestamp: new Date(),
             plusOne: false,
         },
@@ -204,6 +204,41 @@ async function InitializeDatabase() {
         },
         {
             netId: "johndoe24",
+            eventId: 1,
+            scannerId: "johndoe24",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 2,
+            scannerId: "johndoe24",
+            timestamp: new Date(),
+            plusOne: false,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 3,
+            scannerId: "johndoe24",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 4,
+            scannerId: "janesmith101",
+            timestamp: new Date(),
+            plusOne: false,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 5,
+            scannerId: "johndoe24",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "janesmith101",
             eventId: 6,
             scannerId: "janesmith101",
             timestamp: new Date(),

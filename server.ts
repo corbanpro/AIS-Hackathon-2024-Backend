@@ -2,6 +2,14 @@ import express from "express";
 import cors from "cors";
 import db from "./src/initializeDatabase";
 import SendError from "./src/error";
+import {
+  TAttemptLoginRes,
+  TGetEventSummariesRes,
+  TGetScansRes,
+  TGetUpcomingEventsRes,
+  TGetUserAttendanceRes,
+  TEventSummaries,
+} from "./BackendTypes/res";
 
 const app = express();
 app.use(cors());
@@ -18,17 +26,22 @@ app.get("/", (req, res) => {
 });
 
 // ############################## Scan API ##############################
+
 app.get("/GetScans", (req, res) => {
   console.log("Get Scans");
   db("Scan")
     .select()
     .then((scans) => {
-      res.send({ status: "success", data: scans });
+      res.send({ status: "success", scans: scans } satisfies TGetScansRes);
     });
 });
 
 app.post("/InsertScan", (req, res) => {
   const { memberNetId, plusOne, adminNetId, eventId } = req.body;
+  if (!memberNetId || !adminNetId || !eventId) {
+    SendError(res, "insufficientData");
+    return;
+  }
   console.log("Insert scan");
   db("Scan")
     .insert({
@@ -42,18 +55,19 @@ app.post("/InsertScan", (req, res) => {
       res.send({ status: "success" });
     })
     .catch((err) => {
-      if (err.errno === 19) {
-        SendError(res, "duplicateScan");
-        return;
-      }
       SendError(res, "unknownError");
     });
 });
 
 // ############################## Event Info API ##############################
+
 app.get("/GetUserAttendance/:netId", (req, res) => {
   console.log("User Attendance");
   const netId = req.params.netId;
+  if (!netId) {
+    SendError(res, "insufficientData");
+    return;
+  }
   db("Scan")
     .where("netId", netId)
     .select()
@@ -65,7 +79,11 @@ app.get("/GetUserAttendance/:netId", (req, res) => {
         )
         .select()
         .then((events) => {
-          res.send({ status: "success", scans: scans, events: events });
+          res.send({
+            status: "success",
+            scans: scans,
+            events: events,
+          } satisfies TGetUserAttendanceRes);
         });
     });
 });
@@ -79,14 +97,50 @@ app.get("/GetUpcomingEvents", (req, res) => {
     .where("startTime", ">", twoHoursAgo)
     .select()
     .then((events) => {
-      res.send({ status: "success", events: events });
+      res.send({ status: "success", events: events } satisfies TGetUpcomingEventsRes);
     });
+});
+
+app.get("/GetEventSummaries", async (req, res) => {
+  console.log("Event Summaries");
+  const lastFiveEvents = await db("Event")
+    .select()
+    .orderBy("startTime", "desc")
+    .limit(5)
+    .then((events) => {
+      return events;
+    });
+
+  const scans = await db("Scan")
+    .whereIn(
+      "eventId",
+      lastFiveEvents.map((event) => event.eventId)
+    )
+    .select()
+    .then((scans) => {
+      return scans;
+    });
+
+  const scansPerEvent = scans.reduce((acc, scan) => {
+    acc[scan.eventId] = (acc[scan.eventId] || 0) + 1;
+    return acc;
+  }, {} as { [key: number]: number });
+
+  const eventSummaries: TEventSummaries = {
+    scansPerEvent: scansPerEvent,
+  };
+
+  res.send({ status: "success", eventSummaries: eventSummaries } satisfies TGetEventSummariesRes);
 });
 
 // ############################## Auth API ##############################
 
 app.post("/AttemptLogin", (req, res) => {
   const { netId } = req.body;
+  if (!netId) {
+    SendError(res, "insufficientData");
+    return;
+  }
   console.log("Attempt login");
   db("User")
     .where({ netId: netId })
@@ -96,7 +150,7 @@ app.post("/AttemptLogin", (req, res) => {
         SendError(res, "noUser");
         return;
       }
-      res.send({ status: "success", user: user });
+      res.send({ status: "success", user: user[0] } satisfies TAttemptLoginRes);
     });
 });
 

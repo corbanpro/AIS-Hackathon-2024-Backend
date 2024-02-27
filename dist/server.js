@@ -25,7 +25,7 @@ app.get("/GetScans", (req, res) => {
     (0, initializeDatabase_1.default)("Scan")
         .select()
         .then((scans) => {
-        res.send({ status: "success", data: scans });
+        res.send({ status: "success", scans: scans });
     });
 });
 app.post("/InsertScan", (req, res) => {
@@ -43,10 +43,6 @@ app.post("/InsertScan", (req, res) => {
         res.send({ status: "success" });
     })
         .catch((err) => {
-        if (err.errno === 19) {
-            (0, error_1.default)(res, "duplicateScan");
-            return;
-        }
         (0, error_1.default)(res, "unknownError");
     });
 });
@@ -62,7 +58,11 @@ app.get("/GetUserAttendance/:netId", (req, res) => {
             .whereIn("eventId", scans.map((scan) => scan.eventId))
             .select()
             .then((events) => {
-            res.send({ status: "success", scans: scans, events: events });
+            res.send({
+                status: "success",
+                scans: scans,
+                events: events,
+            });
         });
     });
 });
@@ -77,6 +77,30 @@ app.get("/GetUpcomingEvents", (req, res) => {
         res.send({ status: "success", events: events });
     });
 });
+app.get("/GetEventSummaries", async (req, res) => {
+    console.log("Event Summaries");
+    const lastFiveEvents = await (0, initializeDatabase_1.default)("Event")
+        .select()
+        .orderBy("startTime", "desc")
+        .limit(5)
+        .then((events) => {
+        return events;
+    });
+    const scans = await (0, initializeDatabase_1.default)("Scan")
+        .whereIn("eventId", lastFiveEvents.map((event) => event.eventId))
+        .select()
+        .then((scans) => {
+        return scans;
+    });
+    const scansPerEvent = scans.reduce((acc, scan) => {
+        acc[scan.eventId] = (acc[scan.eventId] || 0) + 1;
+        return acc;
+    }, {});
+    const eventSummaries = {
+        scansPerEvent: scansPerEvent,
+    };
+    res.send({ status: "success", eventSummaries: eventSummaries });
+});
 // ############################## Auth API ##############################
 app.post("/AttemptLogin", (req, res) => {
     const { netId } = req.body;
@@ -89,7 +113,7 @@ app.post("/AttemptLogin", (req, res) => {
             (0, error_1.default)(res, "noUser");
             return;
         }
-        res.send({ status: "success", user: user });
+        res.send({ status: "success", user: user[0] });
     });
 });
 app.listen(8080, () => {

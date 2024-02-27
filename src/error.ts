@@ -1,4 +1,6 @@
 import express from "express";
+import { TErrorRes } from "../BackendTypes/res";
+
 const errors = {
   duplicateScan: {
     status: "failed",
@@ -20,17 +22,14 @@ const errors = {
     message: "No user found.",
     log: "no user found",
   },
-} as const satisfies TErrors;
+  insufficientData: {
+    status: "failed",
+    message: "Insufficient data.",
+    log: "insufficient data",
+  },
+} as const satisfies { [key: string]: TErrorRes };
 
 type TValidErrors = keyof typeof errors;
-
-type TErrors = {
-  [key: string]: {
-    status: "failed";
-    message: string;
-    log: string;
-  };
-};
 
 export default function SendError(res: express.Response, error: TValidErrors) {
   res.send(errors[error]);
