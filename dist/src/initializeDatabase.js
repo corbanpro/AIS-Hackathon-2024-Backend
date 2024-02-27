@@ -19,19 +19,21 @@ async function InitializeDatabase() {
     // Create User table
     await db.schema.createTable("User", (table) => {
         table.string("netId").primary();
-        table.string("firstName");
-        table.string("lastName");
+        table.string("firstName").notNullable();
+        table.string("lastName").notNullable();
         table.dateTime("dateCreated").defaultTo(db.fn.now());
         table.boolean("isAdmin").defaultTo(false);
     });
     // Create Event table
     await db.schema.createTable("Event", (table) => {
         table.increments("eventId").primary();
-        table.string("title");
-        table.dateTime("startTime");
-        table.dateTime("endTime");
-        table.string("type");
-        table.string("notes");
+        table.string("title").notNullable();
+        table.dateTime("startTime").notNullable();
+        table.dateTime("endTime").nullable();
+        table.string("type").notNullable();
+        table.string("notes").nullable();
+        table.string("waiverUrl").nullable();
+        table.string("location").notNullable();
         table.string("createdBy").references("netId").inTable("User");
         table.dateTime("createdDate").defaultTo(db.fn.now());
         table.string("editedBy").references("netId").inTable("User").defaultTo(null);
@@ -43,7 +45,7 @@ async function InitializeDatabase() {
         table.integer("eventId").references("eventId").inTable("Event");
         table.string("scannerId").references("netId").inTable("User");
         table.dateTime("timestamp").defaultTo(db.fn.now());
-        table.boolean("plusOne");
+        table.boolean("plusOne").notNullable();
         table.primary(["netId", "eventId", "scannerId"]);
     });
     // Insert sample rows
@@ -63,28 +65,105 @@ async function InitializeDatabase() {
             isAdmin: false,
         },
     ]);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
     await db("Event").insert([
         {
             title: "Event 1",
-            startTime: new Date(),
-            endTime: new Date(),
+            startTime: tomorrow,
+            endTime: tomorrow,
             type: "type 1",
             notes: "notes 1",
             createdBy: "johndoe24",
             createdDate: new Date(),
             editedBy: "johndoe24",
             editDate: new Date(),
+            location: "BYU",
+            waiverUrl: "https://www.google.com",
         },
         {
             title: "Event 2",
+            startTime: tomorrow,
+            endTime: tomorrow,
+            type: "type 2",
+            notes: "notes 2",
+            createdBy: "johndoe24",
+            createdDate: new Date(),
+            editedBy: "johndoe24",
+            editDate: new Date(),
+            location: "BYU",
+        },
+        {
+            title: "Event 3",
+            startTime: new Date(),
+            endTime: new Date(),
+            type: "type 3",
+            notes: "notes 3",
+            createdBy: "johndoe24",
+            createdDate: new Date(),
+            editedBy: "johndoe24",
+            editDate: new Date(),
+            location: "BYU",
+        },
+        {
+            title: "Event 4",
+            startTime: new Date(),
+            endTime: new Date(),
+            type: "type 4",
+            notes: "notes 4",
+            createdBy: "johndoe24",
+            createdDate: new Date(),
+            editedBy: "johndoe24",
+            editDate: new Date(),
+            location: "BYU",
+        },
+        {
+            title: "Event 5",
+            startTime: new Date(),
+            endTime: new Date(),
+            type: "type 5",
+            notes: "notes 5",
+            createdBy: "janesmith101",
+            createdDate: new Date(),
+            editedBy: "janesmith101",
+            editDate: new Date(),
+            location: "BYU",
+        },
+        {
+            title: "Event 6",
+            startTime: new Date(),
+            endTime: new Date(),
+            type: "type 6",
+            notes: "notes 6",
+            createdBy: "johndoe24",
+            createdDate: new Date(),
+            editedBy: "johndoe24",
+            editDate: new Date(),
+            location: "BYU",
+        },
+        {
+            title: "Event 7",
             startTime: new Date(),
             endTime: new Date(),
             type: "type 2",
             notes: "notes 2",
-            createdBy: "jane.smith",
+            createdBy: "johndoe24",
             createdDate: new Date(),
-            editedBy: "jane.smith",
+            editedBy: "johndoe24",
             editDate: new Date(),
+            location: "BYU",
+        },
+        {
+            title: "Event 8",
+            startTime: new Date(),
+            endTime: new Date(),
+            type: "type 2",
+            notes: "notes 2",
+            createdBy: "johndoe24",
+            createdDate: new Date(),
+            editedBy: "johndoe24",
+            editDate: new Date(),
+            location: "BYU",
         },
     ]);
     await db("Scan").insert([
@@ -96,11 +175,53 @@ async function InitializeDatabase() {
             plusOne: true,
         },
         {
-            netId: "janesmith101",
+            netId: "johndoe24",
             eventId: 2,
             scannerId: "johndoe24",
             timestamp: new Date(),
             plusOne: false,
+        },
+        {
+            netId: "janesmith101",
+            eventId: 3,
+            scannerId: "johndoe24",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 4,
+            scannerId: "johndoe24",
+            timestamp: new Date(),
+            plusOne: false,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 5,
+            scannerId: "janesmith101",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 6,
+            scannerId: "janesmith101",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 7,
+            scannerId: "janesmith101",
+            timestamp: new Date(),
+            plusOne: true,
+        },
+        {
+            netId: "johndoe24",
+            eventId: 8,
+            scannerId: "janesmith101",
+            timestamp: new Date(),
+            plusOne: true,
         },
     ]);
     console.log("Database initialized");
