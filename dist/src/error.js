@@ -21,6 +21,11 @@ const errors = {
         message: "No user found.",
         log: "no user found",
     },
+    insufficientData: {
+        status: "failed",
+        message: "Insufficient data.",
+        log: "insufficient data",
+    },
 };
 function SendError(res, error) {
     res.send(errors[error]);

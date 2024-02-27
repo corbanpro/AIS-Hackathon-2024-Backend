@@ -29,13 +29,17 @@ app.get("/GetScans", (req, res) => {
     });
 });
 app.post("/InsertScan", (req, res) => {
-    const { memberNetId, plusOne, adminNetId, eventId } = req.body;
+    const { netId, plusOne, scannerId, eventId } = req.body;
+    if (!netId || !scannerId || !eventId) {
+        (0, error_1.default)(res, "insufficientData");
+        return;
+    }
     console.log("Insert scan");
     (0, initializeDatabase_1.default)("Scan")
         .insert({
-        netId: memberNetId,
+        netId: netId,
         eventId: eventId,
-        scannerId: adminNetId,
+        scannerId: scannerId,
         timestamp: new Date(),
         plusOne: plusOne,
     })
@@ -43,6 +47,10 @@ app.post("/InsertScan", (req, res) => {
         res.send({ status: "success" });
     })
         .catch((err) => {
+        if (err.code === "SQLITE_CONSTRAINT") {
+            (0, error_1.default)(res, "duplicateScan");
+            return;
+        }
         (0, error_1.default)(res, "unknownError");
     });
 });
@@ -50,6 +58,10 @@ app.post("/InsertScan", (req, res) => {
 app.get("/GetUserAttendance/:netId", (req, res) => {
     console.log("User Attendance");
     const netId = req.params.netId;
+    if (!netId) {
+        (0, error_1.default)(res, "insufficientData");
+        return;
+    }
     (0, initializeDatabase_1.default)("Scan")
         .where("netId", netId)
         .select()
@@ -104,6 +116,10 @@ app.get("/GetEventSummaries", async (req, res) => {
 // ############################## Auth API ##############################
 app.post("/AttemptLogin", (req, res) => {
     const { netId } = req.body;
+    if (!netId) {
+        (0, error_1.default)(res, "insufficientData");
+        return;
+    }
     console.log("Attempt login");
     (0, initializeDatabase_1.default)("User")
         .where({ netId: netId })

@@ -37,17 +37,17 @@ app.get("/GetScans", (req, res) => {
 });
 
 app.post("/InsertScan", (req, res) => {
-  const { memberNetId, plusOne, adminNetId, eventId } = req.body;
-  if (!memberNetId || !adminNetId || !eventId) {
+  const { netId, plusOne, scannerId, eventId } = req.body;
+  if (!netId || !scannerId || !eventId) {
     SendError(res, "insufficientData");
     return;
   }
   console.log("Insert scan");
   db("Scan")
     .insert({
-      netId: memberNetId,
+      netId: netId,
       eventId: eventId,
-      scannerId: adminNetId,
+      scannerId: scannerId,
       timestamp: new Date(),
       plusOne: plusOne,
     })
@@ -55,6 +55,10 @@ app.post("/InsertScan", (req, res) => {
       res.send({ status: "success" });
     })
     .catch((err) => {
+      if (err.code === "SQLITE_CONSTRAINT") {
+        SendError(res, "duplicateScan");
+        return;
+      }
       SendError(res, "unknownError");
     });
 });
