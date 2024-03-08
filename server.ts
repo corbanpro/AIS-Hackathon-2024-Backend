@@ -9,8 +9,11 @@ import {
   TGetUpcomingEventsRes,
   TGetUserAttendanceRes,
   TEventSummaries,
+  TScansPerEvent,
 } from "./BackendTypes/res";
 import { TValidEventType, eventTypeThresholds } from "./BackendTypes/db";
+const converter = require("json-2-csv");
+import fs from "fs";
 
 const app = express();
 app.use(cors());
@@ -106,6 +109,14 @@ app.get("/GetUpcomingEvents", (req, res) => {
     });
 });
 
+const raffleEligibleHavingClause = Object.keys(eventTypeThresholds)
+  .map((eventType) => {
+    return `sum(case when type = '${eventType}' then 1 else 0 end) >= ${
+      eventTypeThresholds[eventType as TValidEventType]
+    }`;
+  })
+  .join(" AND ");
+
 app.get("/GetEventSummaries", async (req, res) => {
   console.log("Event Summaries");
   const lastFiveEvents = await db("Event")
@@ -129,11 +140,11 @@ app.get("/GetEventSummaries", async (req, res) => {
   const scansPerEvent = last5EventScans.reduce((acc, scan) => {
     acc[scan.eventId] = {
       numScans: (acc[scan.eventId]?.numScans || 0) + 1,
-      eventname: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.title,
-      eventDate: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.startTime,
-    };
+      name: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.title,
+      date: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.startTime,
+    } satisfies TScansPerEvent;
     return acc;
-  }, {} as { [key: number]: any });
+  }, {});
 
   const totalAttendance = await db("Scan")
     .select()
@@ -142,14 +153,6 @@ app.get("/GetEventSummaries", async (req, res) => {
         return acc + 1 + scan.plusOne;
       }, 0)
     );
-
-  const raffleEligibleHavingClause = Object.keys(eventTypeThresholds)
-    .map((eventType) => {
-      return `sum(case when type = '${eventType}' then 1 else 0 end) >= ${
-        eventTypeThresholds[eventType as TValidEventType]
-      }`;
-    })
-    .join(" AND ");
 
   const raffleEligibleStudents = await db("Scan")
     .join("Event", "Scan.eventId", "Event.eventId")
@@ -165,6 +168,27 @@ app.get("/GetEventSummaries", async (req, res) => {
   };
 
   res.send({ status: "success", eventSummaries: eventSummaries } satisfies TGetEventSummariesRes);
+});
+
+app.get("/StudentRaffle", (req, res) => {
+  console.log("Student Raffle");
+  db("Scan")
+    .join("Event", "Scan.eventId", "Event.eventId")
+    .groupBy("netId")
+    .having(db.raw(raffleEligibleHavingClause))
+    .select("netId")
+    .then(async (students) => {
+      const raffleUsers = await db("User")
+        .select()
+        .whereIn(
+          "netId",
+          students.map((student) => student.netId)
+        )
+        .then((users) => users);
+      const csv = converter.json2csv(raffleUsers);
+      fs.writeFileSync("raffleEligibleStudents.csv", csv);
+      res.download("raffleEligibleStudents.csv");
+    });
 });
 
 // ############################## Auth API ##############################

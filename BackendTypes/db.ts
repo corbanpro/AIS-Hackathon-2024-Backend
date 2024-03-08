@@ -1,12 +1,16 @@
 export type TValidEventType = "socialize" | "learn" | "serve" | "discover" | "connect";
 
-export const eventTypeThresholds = {
+export type TEventTypeThresholds = {
+  [key: string]: number;
+};
+
+export const eventTypeThresholds: TEventTypeThresholds = {
   socialize: 2,
   learn: 2,
   serve: 4,
   discover: 4,
   connect: 3,
-} as const;
+};
 
 export type TDbUser = {
   netId: string;

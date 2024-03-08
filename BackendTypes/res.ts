@@ -26,8 +26,16 @@ export type TGetUpcomingEventsRes = {
   events: TDbEvent[];
 };
 
+export type TScansPerEvent = {
+  [key: string]: {
+    numScans: number;
+    name: string;
+    date: string;
+  };
+};
+
 export type TEventSummaries = {
-  scansPerEvent: { [key: number]: number };
+  scansPerEvent: TScansPerEvent;
   totalAttendance: number;
   raffleEligibleStudents: string[];
 };

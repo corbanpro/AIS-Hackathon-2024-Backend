@@ -8,6 +8,8 @@ const cors_1 = __importDefault(require("cors"));
 const initializeDatabase_1 = __importDefault(require("./src/initializeDatabase"));
 const error_1 = __importDefault(require("./src/error"));
 const db_1 = require("./BackendTypes/db");
+const converter = require("json-2-csv");
+const fs_1 = __importDefault(require("fs"));
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -90,6 +92,11 @@ app.get("/GetUpcomingEvents", (req, res) => {
         res.send({ status: "success", events: events });
     });
 });
+const raffleEligibleHavingClause = Object.keys(db_1.eventTypeThresholds)
+    .map((eventType) => {
+    return `sum(case when type = '${eventType}' then 1 else 0 end) >= ${db_1.eventTypeThresholds[eventType]}`;
+})
+    .join(" AND ");
 app.get("/GetEventSummaries", async (req, res) => {
     console.log("Event Summaries");
     const lastFiveEvents = await (0, initializeDatabase_1.default)("Event")
@@ -108,8 +115,8 @@ app.get("/GetEventSummaries", async (req, res) => {
     const scansPerEvent = last5EventScans.reduce((acc, scan) => {
         acc[scan.eventId] = {
             numScans: (acc[scan.eventId]?.numScans || 0) + 1,
-            eventname: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.title,
-            eventDate: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.startTime,
+            name: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.title,
+            date: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.startTime,
         };
         return acc;
     }, {});
@@ -118,11 +125,6 @@ app.get("/GetEventSummaries", async (req, res) => {
         .then((scans) => scans.reduce((acc, scan) => {
         return acc + 1 + scan.plusOne;
     }, 0));
-    const raffleEligibleHavingClause = Object.keys(db_1.eventTypeThresholds)
-        .map((eventType) => {
-        return `sum(case when type = '${eventType}' then 1 else 0 end) >= ${db_1.eventTypeThresholds[eventType]}`;
-    })
-        .join(" AND ");
     const raffleEligibleStudents = await (0, initializeDatabase_1.default)("Scan")
         .join("Event", "Scan.eventId", "Event.eventId")
         .groupBy("netId")
@@ -135,6 +137,25 @@ app.get("/GetEventSummaries", async (req, res) => {
         raffleEligibleStudents,
     };
     res.send({ status: "success", eventSummaries: eventSummaries });
+});
+app.get("/StudentRaffle", (req, res) => {
+    console.log("Student Raffle");
+    (0, initializeDatabase_1.default)("Scan")
+        .join("Event", "Scan.eventId", "Event.eventId")
+        .groupBy("netId")
+        .having(initializeDatabase_1.default.raw(raffleEligibleHavingClause))
+        .select("netId")
+        .then(async (students) => {
+        const raffleUsers = await (0, initializeDatabase_1.default)("User")
+            .select()
+            .whereIn("netId", students.map((student) => student.netId))
+            .then((users) => users);
+        console.log(students);
+        console.log(raffleUsers);
+        const csv = converter.json2csv(raffleUsers);
+        fs_1.default.writeFileSync("raffleEligibleStudents.csv", csv);
+        res.download("raffleEligibleStudents.csv");
+    });
 });
 // ############################## Auth API ##############################
 app.post("/AttemptLogin", (req, res) => {
