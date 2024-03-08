@@ -1,11 +1,19 @@
-type TValidEventType = "socialize" | "learn" | "serve" | "discover" | "connect";
+export type TValidEventType = "socialize" | "learn" | "serve" | "discover" | "connect";
+
+export const eventTypeThresholds = {
+  socialize: 2,
+  learn: 2,
+  serve: 4,
+  discover: 4,
+  connect: 3,
+} as const;
 
 export type TDbUser = {
   netId: string;
   firstName: string;
   lastName: string;
   isAdmin: number;
-  dateCreated?: number;
+  dateCreated?: number | Date;
 };
 
 export type TDbEvent = {

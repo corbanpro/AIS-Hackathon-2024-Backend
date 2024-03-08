@@ -10,6 +10,7 @@ import {
   TGetUserAttendanceRes,
   TEventSummaries,
 } from "./BackendTypes/res";
+import { TValidEventType, eventTypeThresholds } from "./BackendTypes/db";
 
 const app = express();
 app.use(cors());
@@ -115,7 +116,7 @@ app.get("/GetEventSummaries", async (req, res) => {
       return events;
     });
 
-  const scans = await db("Scan")
+  const last5EventScans = await db("Scan")
     .whereIn(
       "eventId",
       lastFiveEvents.map((event) => event.eventId)
@@ -125,13 +126,42 @@ app.get("/GetEventSummaries", async (req, res) => {
       return scans;
     });
 
-  const scansPerEvent = scans.reduce((acc, scan) => {
-    acc[scan.eventId] = (acc[scan.eventId] || 0) + 1;
+  const scansPerEvent = last5EventScans.reduce((acc, scan) => {
+    acc[scan.eventId] = {
+      numScans: (acc[scan.eventId]?.numScans || 0) + 1,
+      eventname: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.title,
+      eventDate: lastFiveEvents.find((event) => event.eventId === scan.eventId)?.startTime,
+    };
     return acc;
-  }, {} as { [key: number]: number });
+  }, {} as { [key: number]: any });
+
+  const totalAttendance = await db("Scan")
+    .select()
+    .then((scans) =>
+      scans.reduce((acc, scan) => {
+        return acc + 1 + scan.plusOne;
+      }, 0)
+    );
+
+  const raffleEligibleHavingClause = Object.keys(eventTypeThresholds)
+    .map((eventType) => {
+      return `sum(case when type = '${eventType}' then 1 else 0 end) >= ${
+        eventTypeThresholds[eventType as TValidEventType]
+      }`;
+    })
+    .join(" AND ");
+
+  const raffleEligibleStudents = await db("Scan")
+    .join("Event", "Scan.eventId", "Event.eventId")
+    .groupBy("netId")
+    .having(db.raw(raffleEligibleHavingClause))
+    .select()
+    .then((students) => students.map((student) => student.netId));
 
   const eventSummaries: TEventSummaries = {
-    scansPerEvent: scansPerEvent,
+    scansPerEvent,
+    totalAttendance,
+    raffleEligibleStudents,
   };
 
   res.send({ status: "success", eventSummaries: eventSummaries } satisfies TGetEventSummariesRes);

@@ -28,6 +28,8 @@ export type TGetUpcomingEventsRes = {
 
 export type TEventSummaries = {
   scansPerEvent: { [key: number]: number };
+  totalAttendance: number;
+  raffleEligibleStudents: string[];
 };
 
 export type TGetEventSummariesRes = {

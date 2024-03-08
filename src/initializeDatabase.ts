@@ -1,3 +1,4 @@
+import { TDbUser } from "@BackendTypes/db";
 import knex from "knex";
 
 const db = knex({
@@ -62,6 +63,13 @@ async function InitializeDatabase() {
       netId: "janesmith101",
       firstName: "Jane",
       lastName: "Smith",
+      dateCreated: new Date(),
+      isAdmin: false,
+    },
+    {
+      netId: "cgp27",
+      firstName: "Corban",
+      lastName: "Procuniar",
       dateCreated: new Date(),
       isAdmin: false,
     },

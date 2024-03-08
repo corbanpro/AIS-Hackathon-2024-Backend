@@ -18,15 +18,15 @@ async function InitializeDatabase() {
     await db.schema.dropTableIfExists("User");
     // Create User table
     await db.schema.createTable("User", (table) => {
-        table.string("netId").primary();
+        table.string("netId").primary().notNullable();
         table.string("firstName").notNullable();
         table.string("lastName").notNullable();
-        table.boolean("isAdmin").defaultTo(false);
-        table.dateTime("dateCreated").defaultTo(db.fn.now());
+        table.boolean("isAdmin").defaultTo(false).notNullable();
+        table.dateTime("dateCreated").defaultTo(db.fn.now()).notNullable();
     });
     // Create Event table
     await db.schema.createTable("Event", (table) => {
-        table.increments("eventId").primary();
+        table.increments("eventId").primary().notNullable();
         table.string("title").notNullable();
         table.dateTime("startTime").notNullable();
         table.dateTime("endTime").notNullable();
@@ -34,17 +34,17 @@ async function InitializeDatabase() {
         table.string("notes").nullable();
         table.string("waiverUrl").nullable();
         table.string("location").notNullable();
-        table.string("createdBy").references("netId").inTable("User");
-        table.dateTime("createdDate").defaultTo(db.fn.now());
-        table.string("editedBy").references("netId").inTable("User").defaultTo(null);
-        table.dateTime("editDate").defaultTo(db.fn.now());
+        table.string("createdBy").references("netId").inTable("User").notNullable();
+        table.dateTime("createdDate").defaultTo(db.fn.now()).notNullable();
+        table.string("editedBy").references("netId").inTable("User").notNullable();
+        table.dateTime("editDate").defaultTo(db.fn.now()).notNullable();
     });
     // Create Scan table
     await db.schema.createTable("Scan", (table) => {
         table.string("netId").references("netId").inTable("User").notNullable();
         table.integer("eventId").references("eventId").inTable("Event").notNullable();
         table.string("scannerId").references("netId").inTable("User").notNullable();
-        table.dateTime("timestamp").defaultTo(db.fn.now());
+        table.dateTime("timestamp").defaultTo(db.fn.now()).notNullable();
         table.boolean("plusOne").notNullable();
         table.primary(["netId", "eventId", "scannerId"]);
     });
@@ -61,6 +61,13 @@ async function InitializeDatabase() {
             netId: "janesmith101",
             firstName: "Jane",
             lastName: "Smith",
+            dateCreated: new Date(),
+            isAdmin: false,
+        },
+        {
+            netId: "cgp27",
+            firstName: "Corban",
+            lastName: "Procuniar",
             dateCreated: new Date(),
             isAdmin: false,
         },
